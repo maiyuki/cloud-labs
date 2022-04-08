@@ -1,0 +1,81 @@
+---
+- hosts: webservers
+  become: true
+  vars:
+    container_count: 1
+    ansible_user: ubuntu
+    default_container_name: webserver
+    default_container_image: httpd
+    webroot: "/webroot"
+
+  tasks:
+    # Install some tools
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    # Install Docker
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    # Add Docker image and Container Task
+    - name: Pull default Docker image
+      community.docker.docker_image:
+        name: "{{ default_container_image }}"
+        source: pull
+
+    - name: webroot present
+      ansible.builtin.file:
+        path: "{{ webroot }}"
+        state: directory
+
+    - name: Add index.html
+      ansible.builtin.copy:
+        dest: "{{ webroot }}/index.html"
+        content: |
+          "{{ ansible_hostname }}"
+    
+    - name: Add healthcheck for loadbalancer
+      ansible.builtin.copy:
+        dest: "{{ webroot }}/health.html"
+        content: |
+          OK
+
+    # Manage the life cycle of docker containers
+    - name: Create default containers
+      community.docker.docker_container:
+        name: "{{ default_container_name }}{{ item }}"
+        image: "{{ default_container_image }}"
+        exposed_ports:
+          - 80
+        ports:
+          - 80:80
+        volumes: "{{ webroot }}:/usr/local/apache2/htdocs/"
+        state: started
+      with_sequence: count={{ container_count }}

@@ -7,10 +7,6 @@ Having remote state is common in a collaboration within the team and between tea
 Setup Remote Terraform state in Swift Obect Store. Verify that is works!
 
 ```
-provider "openstack" {
-  use_octavia = true
-}
-
 terraform {
   backend "swift" {
     container         = "terraform-state-webservers"

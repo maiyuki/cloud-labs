@@ -4,7 +4,7 @@
 
 Having remote state is common in a collaboration within the team and between teams. 
 
-Setup Remote Terraform state in Swift Obect Store. Verify that is works!
+Setup Remote Terraform state in Swift Object Store. Verify that is works!
 
 ```
 terraform {
